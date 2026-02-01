@@ -1,1 +1,21 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/Kf5HLjuv)
+# Ping-Pong Game
+
+A lightweight, browser-based Ping-Pong game built with HTML, CSS, and
+JavaScript. It includes player controls, ball physics with paddle
+collisions, and live score tracking.
+
+## How to Run
+
+1. Open `index.html` in any modern browser.
+2. Press **Start** or hit **Space** to begin the match.
+
+## Controls
+
+- **Left paddle:** `W` / `S`
+- **Right paddle:** `Arrow Up` / `Arrow Down`
+
+## Game Rules
+
+- The first player to reach 11 points wins.
+- The ball bounces off walls and paddles.
+- Each paddle hit slightly increases the ball speed.
