@@ -5,15 +5,19 @@ import pygame
 
 WIDTH = 800
 HEIGHT = 500
+FPS = 60
 
 BG_COLOR = (20, 20, 20)
 WHITE = (240, 240, 240)
 PADDLE_COLOR = (200, 200, 200)
 BALL_COLOR = (240, 80, 80)
+MIDLINE_COLOR = (80, 80, 80)
+HINT_COLOR = (160, 160, 160)
 
 PADDLE_WIDTH = 12
 PADDLE_HEIGHT = 90
 BALL_RADIUS = 8
+PADDLE_MARGIN = 30
 
 PADDLE_SPEED = 6
 BALL_SPEED = 5
@@ -53,10 +57,13 @@ def main():
     hint_font = pygame.font.Font(None, 24)
 
     left_paddle = pygame.Rect(
-        30, HEIGHT // 2 - PADDLE_HEIGHT // 2, PADDLE_WIDTH, PADDLE_HEIGHT
+        PADDLE_MARGIN,
+        HEIGHT // 2 - PADDLE_HEIGHT // 2,
+        PADDLE_WIDTH,
+        PADDLE_HEIGHT,
     )
     right_paddle = pygame.Rect(
-        WIDTH - 30 - PADDLE_WIDTH,
+        WIDTH - PADDLE_MARGIN - PADDLE_WIDTH,
         HEIGHT // 2 - PADDLE_HEIGHT // 2,
         PADDLE_WIDTH,
         PADDLE_HEIGHT,
@@ -65,15 +72,24 @@ def main():
     left_score = 0
     right_score = 0
 
-    ball_x, ball_y, ball_vx, ball_vy = reset_ball(random.choice((-1, 1)))
+    serve_direction = random.choice((-1, 1))
+    ball_x = WIDTH // 2
+    ball_y = HEIGHT // 2
+    ball_vx = 0
+    ball_vy = 0
+    serving = True
 
     running = True
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    running = False
+                elif event.key == pygame.K_SPACE and serving:
+                    ball_x, ball_y, ball_vx, ball_vy = reset_ball(serve_direction)
+                    serving = False
 
         keys = pygame.key.get_pressed()
         if keys[pygame.K_w]:
@@ -88,41 +104,52 @@ def main():
         left_paddle.y = clamp(left_paddle.y, 0, HEIGHT - PADDLE_HEIGHT)
         right_paddle.y = clamp(right_paddle.y, 0, HEIGHT - PADDLE_HEIGHT)
 
-        ball_x += ball_vx
-        ball_y += ball_vy
+        if not serving:
+            ball_x += ball_vx
+            ball_y += ball_vy
 
-        if ball_y - BALL_RADIUS <= 0:
-            ball_y = BALL_RADIUS
-            ball_vy *= -1
-        elif ball_y + BALL_RADIUS >= HEIGHT:
-            ball_y = HEIGHT - BALL_RADIUS
-            ball_vy *= -1
+            if ball_y - BALL_RADIUS <= 0:
+                ball_y = BALL_RADIUS
+                ball_vy *= -1
+            elif ball_y + BALL_RADIUS >= HEIGHT:
+                ball_y = HEIGHT - BALL_RADIUS
+                ball_vy *= -1
 
-        ball_rect = pygame.Rect(
-            int(ball_x - BALL_RADIUS),
-            int(ball_y - BALL_RADIUS),
-            BALL_RADIUS * 2,
-            BALL_RADIUS * 2,
-        )
-
-        if ball_rect.colliderect(left_paddle) and ball_vx < 0:
-            ball_x = left_paddle.right + BALL_RADIUS
-            ball_vx, ball_vy = handle_paddle_collision(
-                ball_x, ball_y, ball_vx, ball_vy, left_paddle, 1
+            ball_rect = pygame.Rect(
+                int(ball_x - BALL_RADIUS),
+                int(ball_y - BALL_RADIUS),
+                BALL_RADIUS * 2,
+                BALL_RADIUS * 2,
             )
 
-        if ball_rect.colliderect(right_paddle) and ball_vx > 0:
-            ball_x = right_paddle.left - BALL_RADIUS
-            ball_vx, ball_vy = handle_paddle_collision(
-                ball_x, ball_y, ball_vx, ball_vy, right_paddle, -1
-            )
+            if ball_rect.colliderect(left_paddle) and ball_vx < 0:
+                ball_x = left_paddle.right + BALL_RADIUS
+                ball_vx, ball_vy = handle_paddle_collision(
+                    ball_x, ball_y, ball_vx, ball_vy, left_paddle, 1
+                )
 
-        if ball_x < 0:
-            right_score += 1
-            ball_x, ball_y, ball_vx, ball_vy = reset_ball(-1)
-        elif ball_x > WIDTH:
-            left_score += 1
-            ball_x, ball_y, ball_vx, ball_vy = reset_ball(1)
+            if ball_rect.colliderect(right_paddle) and ball_vx > 0:
+                ball_x = right_paddle.left - BALL_RADIUS
+                ball_vx, ball_vy = handle_paddle_collision(
+                    ball_x, ball_y, ball_vx, ball_vy, right_paddle, -1
+                )
+
+            if ball_x < 0:
+                right_score += 1
+                serve_direction = -1
+                serving = True
+                ball_x = WIDTH // 2
+                ball_y = HEIGHT // 2
+                ball_vx = 0
+                ball_vy = 0
+            elif ball_x > WIDTH:
+                left_score += 1
+                serve_direction = 1
+                serving = True
+                ball_x = WIDTH // 2
+                ball_y = HEIGHT // 2
+                ball_vx = 0
+                ball_vy = 0
 
         screen.fill(BG_COLOR)
         pygame.draw.rect(screen, PADDLE_COLOR, left_paddle)
@@ -130,7 +157,7 @@ def main():
         pygame.draw.circle(screen, BALL_COLOR, (int(ball_x), int(ball_y)), BALL_RADIUS)
 
         pygame.draw.aaline(
-            screen, (80, 80, 80), (WIDTH // 2, 10), (WIDTH // 2, HEIGHT - 10)
+            screen, MIDLINE_COLOR, (WIDTH // 2, 10), (WIDTH // 2, HEIGHT - 10)
         )
 
         score_text = font.render(f"{left_score}   {right_score}", True, WHITE)
@@ -140,15 +167,24 @@ def main():
         )
 
         hint_text = hint_font.render(
-            "Left: W/S   Right: Up/Down   Esc: Quit", True, (160, 160, 160)
+            "Left: W/S   Right: Up/Down   Space: Serve   Esc: Quit",
+            True,
+            HINT_COLOR,
         )
         screen.blit(
             hint_text,
             (WIDTH // 2 - hint_text.get_width() // 2, HEIGHT - 30),
         )
 
+        if serving:
+            serve_text = hint_font.render("Press Space to serve", True, WHITE)
+            screen.blit(
+                serve_text,
+                (WIDTH // 2 - serve_text.get_width() // 2, HEIGHT // 2 - 20),
+            )
+
         pygame.display.flip()
-        clock.tick(60)
+        clock.tick(FPS)
 
     pygame.quit()
 

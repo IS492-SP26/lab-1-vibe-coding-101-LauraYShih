@@ -26,4 +26,5 @@ python3 ping_pong.py
 
 - Left paddle: `W` / `S`
 - Right paddle: `Up` / `Down`
+- Serve: `Space`
 - Quit: `Esc` or window close button
